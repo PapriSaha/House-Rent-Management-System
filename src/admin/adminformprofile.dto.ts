@@ -1,4 +1,4 @@
-import{ IsInt, IsNotEmpty, Length,Matches} from "class-validator";
+import{ IsInt, IsNotEmpty, Length,Matches,IsEmail} from "class-validator";
 
 export class AdminProfile{
 
@@ -12,6 +12,12 @@ export class AdminProfile{
         message:'Password must be equal or more than 6 characters long with at least 1 special character, 1 capital letter, 1 small and 1 digit',
       })
     pass:string;
+
+    @IsEmail()
+    email:string;
+
+    @IsNotEmpty()
+    address:string;
 
     
 }

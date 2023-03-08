@@ -1,38 +1,54 @@
 import { Injectable } from "@nestjs/common";
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { AdminEntity } from "./adminentity.entity";
+import { CustomerEntity } from "./adminentity.entity";
+import { EmployeeEntity } from "./adminentity.entity";
+import { HouseEntity } from "./adminentity.entity";
 import { AdminForm } from "./adminformemployee.dto";
 import { AdminCustomer } from "./adminformcustomer.dto";
 import { AdminProfile} from "./adminformprofile.dto";
-import { CarInfo} from "./admincarinfo.dto";
+import { HouseInfo} from "./adminhouseinfo.dto";
 
 
 
 @Injectable()
 export class AdminService {
-
-
+    constructor(
+        @InjectRepository(AdminEntity)
+        private adminRepo: Repository<AdminEntity>,
+        @InjectRepository(CustomerEntity)
+        private customerRepo: Repository<CustomerEntity>,
+        @InjectRepository(EmployeeEntity)
+        private empRepo: Repository<EmployeeEntity>,
+        @InjectRepository(HouseEntity)
+        private houseRepo: Repository<HouseEntity>
+      ) 
+      {}
 
 login(uname):any {
     
-    return "Login Successful and the User Name of this Account is "+ uname;
+    return this.adminRepo.findOneBy({uname});
 }
     
 loginName(qry):any {
         
-    return "the attempted password is correct and this is "+qry.pass +" and the user name is "+qry.uname;
+    return this.adminRepo.findOneBy({ uname:qry.uname,pass:qry.pass });
 }
 getCustomerByID(custid):any {
     
-    return "This Customer id is found and the id is "+ custid;
+    return this.customerRepo.findOneBy({custid});
 }
 
 getCustomerByIDName(qry):any {
+
+    return this.customerRepo.findOneBy({ custid:qry.custid,custname:qry.custname });
     
-    return "the Customer id is found which is "+qry.custid +" and name is "+qry.custname;
 }
 
 getEmployeeByID(id):any {
     
-    return "This Employee id is found and the id is "+ id ;
+    return this.empRepo.findOneBy({id});
 }
 
 
@@ -40,50 +56,66 @@ getEmployeeByID(id):any {
 
 getEmployeeByIDName(qry):any {
     
-    return "the Employee id is found which is "+qry.id +" and name is "+qry.name;
+    return this.empRepo.findOneBy({ id:qry.id,name:qry.name });
 }
 
 
 insertEmployee(mydto:AdminForm):any{
 
-    return "Inserted Employee User name: " + mydto.name+" and id is " + mydto.id;
+    const empaccount = new EmployeeEntity()
+    empaccount.name = mydto.name;
+    empaccount.email = mydto.email; 
+    empaccount.address = mydto.address;
+   return this.empRepo.save(empaccount);
 }
 
 
 
 insertCustomer(mydto:AdminCustomer):any{
 
-        return "Inserted Customer User name: " + mydto.custname+" and id is " + mydto.custid;
+    const cusaccount = new CustomerEntity()
+    cusaccount.custname = mydto.custname;
+    cusaccount.email = mydto.email;
+    cusaccount.address = mydto.address;
+   return this.customerRepo.save(cusaccount);
     }
 
 
 signup(mydto:AdminProfile):any{
 
-        return "Admin User name: " + mydto.uname+" and password is " + mydto.pass;
+    const adminaccount = new AdminEntity()
+    adminaccount.uname = mydto.uname;
+    adminaccount.pass = mydto.pass;
+    adminaccount.email = mydto.email;
+    adminaccount.address = mydto.address;
+   return this.adminRepo.save(adminaccount);
+        
 }
 
 
 
 
 updateEmployee(name,id):any {
-        return "Updated Employee name: " +name+" and id is " +id;
+    console.log(name+id);
+    return this.empRepo.update(id,{name:name});
     }
 
 
 
-updateEmployeebyid(name,id):any {
-        return "Update Employee id is " +id+" and the name is " + name;
+updateEmployeebyid(mydto:AdminForm,id):any {
+    return this.empRepo.update(id,mydto);
     }
     
 
 updateCustomer(custname,custid):any {
-        return "Updated Employee name: " +custname+" and id is " +custid;
+    console.log(custname+custid);
+    return this.customerRepo.update(custid,{custname:custname});
     }
 
 
 
-updateCustomerbyid(custname,custid):any {
-        return "Update Employee id is " +custid;
+updateCustomerbyid(mydto:AdminCustomer,custid):any {
+    return this.customerRepo.update(custid,mydto);
     }
 
 
@@ -91,39 +123,54 @@ updateCustomerbyid(custname,custid):any {
 
     deleteEmployeebyid(id):any {
     
-        return  id + "This Employee is deleted";
+        return this.empRepo.delete(id);
     }
 
 
 
     deleteCustomerbyid(custid):any {
     
-        return  custid + "this Customer is deleted";
+        return this.customerRepo.delete(custid);
+    }
+
+    updatePassword(pass,id):any {
+        console.log(pass+id);
+        return this.adminRepo.update(id,{pass:pass});
+    }
+
+    updatePasswordByID(mydto:AdminProfile,id):any {
+        return this.adminRepo.update(id,mydto);
     }
     
-    insertCar(mydto:CarInfo):any{
+    insertHouse(mydto:HouseInfo):any{
 
-        return "Inserted Car name: " + mydto.carname +" , id is " + mydto.carid +" and the license number is " + mydto.carLicenceNo;
+        const houseaccount = new HouseEntity()
+        houseaccount.housename = mydto.housename;
+        houseaccount.HouseAdd = mydto.HouseAdd;
+        houseaccount.RentStatus = mydto.RentStatus;
+        houseaccount.RentPrice= mydto.RentPrice;
+       return this.houseRepo.save(houseaccount);
     }
 
-    updateCar(carname,carid):any {
-        return "Updated Car name: " +carname +" and id is "+ carid;
+    updateHouse(housename,id):any {
+        console.log(housename+id);
+        return this.houseRepo.update(id,{housename:housename});
     }
 
-    updateCarByID(carname,carid):any {
-        return "Updated Car id is " +carid;
+    updateHouseByID(mydto:HouseInfo,id):any {
+        return this.houseRepo.update(id,mydto);
     }
-    getCarByID(carid):any {
+    getCarByID(id):any {
     
-        return "This Car id is found and the id is "+ carid;
+        return this.houseRepo.findOneBy({id});
     }
     getProfile():string { 
         return "This is Admin Profile";
     
     }
 
-    getCarByIDName(qry):any {
+    getHouseByIDName(qry):any {
     
-        return "the Car id is found which is "+qry.carid+" and name is "+qry.carname;
+        return this.houseRepo.findOneBy({ id:qry.id,housename:qry.housename });
     }
 }

@@ -1,8 +1,8 @@
-import { Body, Controller, Delete, Get, Param, Post, Put,Patch, Query,ParseIntPipe,ParseFloatPipe,UsePipes,ValidationPipe} from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Post,Put,Patch, Query,ParseIntPipe,ParseFloatPipe,UsePipes,ValidationPipe} from "@nestjs/common";
 import { AdminForm } from "./adminformemployee.dto";
 import { AdminCustomer } from "./adminformcustomer.dto";
 import { AdminProfile} from "./adminformprofile.dto";
-import { CarInfo} from "./admincarinfo.dto";
+import { HouseInfo} from "./adminhouseinfo.dto";
 import { AdminService } from "./adminservice.service";
 
 
@@ -18,10 +18,9 @@ export class AdminController
       return this.adminService.login(uname);
     }
     @Get("/login")
-    loginName(@Query() qry:any): any {
+    loginName(@Query() qry:any ): any {
       return this.adminService.loginName(qry);
     }  
-
 
   @Get("/findcustomer/:custid")
     getCustomerByID(@Param("custid",ParseFloatPipe) custid:number): any{
@@ -60,7 +59,21 @@ export class AdminController
       return this.adminService.signup(mydto);
     }
     
-
+    @Patch("/forgetpassword/")
+    @UsePipes(new ValidationPipe())
+      updatePassword( 
+        @Body("pass") pass:string, 
+        @Body("id") id:number
+        ): any {
+      return this.adminService.updatePassword(pass, id);
+      } 
+      @Patch("/forgetpassword/:id")
+    updatePasswordByID( 
+        @Body() mydto:AdminProfile,
+        @Param("id",ParseIntPipe) id:number
+        ): any {
+      return this.adminService.updatePasswordByID(mydto,id);
+      }
 
   @Put("/updateemployee/")
   @UsePipes(new ValidationPipe())
@@ -72,10 +85,10 @@ export class AdminController
     } 
     @Put("/updateemployee/:id")
   updateEmployeebyid( 
-      @Body("name") name:string, 
+      @Body() mydto:AdminForm,
       @Param("id",ParseIntPipe) id:number
       ): any {
-    return this.adminService.updateEmployeebyid(name,id);
+    return this.adminService.updateEmployeebyid(mydto,id);
     }
 
   @Delete("/deleteEmp/:id")
@@ -103,10 +116,10 @@ export class AdminController
     
     @Put("/updatecustomer/:custid")
   updateCustomerbyid( 
-      @Body("custname") custname:string, 
+      @Body() mydto:AdminCustomer, 
       @Param("custid",ParseIntPipe) custid:number
       ): any {
-    return this.adminService.updateCustomerbyid(custname,custid);
+    return this.adminService.updateCustomerbyid(mydto,custid);
     }
 
   @Get("/Profile")
@@ -116,38 +129,38 @@ export class AdminController
   
 
 
-  @Post("/insertcar")
+  @Post("/inserthouse")
   @UsePipes(new ValidationPipe())
-    insertCar(@Body() mydto:CarInfo): any {
-      return this.adminService.insertCar(mydto);
+    insertCar(@Body() mydto:HouseInfo): any {
+      return this.adminService.insertHouse(mydto);
     }
 
 
-@Put("/updatecar/")
+@Put("/updatehouse/")
 @UsePipes(new ValidationPipe())
     updateCar( 
-      @Body("carname") carname:string,
-      @Body("carid") carid:number
+      @Body("housename") housename:string,
+      @Body("id") id:number
       ): any {
-    return this.adminService.updateCar(carname,carid);
+    return this.adminService.updateHouse(housename,id);
     }
-  @Put("/updatecar/:carid")
+  @Put("/updatehouse/:id")
     updateCarByID( 
-        @Body("carname") carname:string,
-        @Param("carid",ParseIntPipe) carid:number
+        @Body() mydto:HouseInfo,
+        @Param("id",ParseIntPipe) id:number
         ): any {
-      return this.adminService.updateCarByID(carname,carid);
+      return this.adminService.updateHouseByID(mydto,id);
       }
 
 
-  @Get("/findcar/:carid")
-      getCarByID(@Param("carid",ParseIntPipe) carid:number): any{
-        return this.adminService.getCarByID(carid);
+  @Get("/findhouse/:id")
+      getCarByID(@Param("id",ParseIntPipe) id:number): any{
+        return this.adminService.getCarByID(id);
       }
 
-    @Get("/findcar")
-    getCarByIDName(@Query() qry:any): any {
-      return this.adminService.getCarByIDName(qry);
+    @Get("/findhouse")
+    getHouseByIDName(@Query() qry:any): any {
+      return this.adminService.getHouseByIDName(qry);
     }  
 
 }
