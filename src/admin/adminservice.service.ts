@@ -1,14 +1,17 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { ManagerEntity } from "src/manager/managerentity.entity";
 import { AdminEntity } from "./adminentity.entity";
-import { CustomerEntity } from "./adminentity.entity";
-import { EmployeeEntity } from "./adminentity.entity";
+import { OwnerEntity } from "src/houseowner/ownerentity.entity";
+import { TenantEntity } from "./adminentity.entity";
 import { HouseEntity } from "./adminentity.entity";
-import { AdminForm } from "./adminformemployee.dto";
-import { AdminCustomer } from "./adminformcustomer.dto";
-import { AdminProfile} from "./adminformprofile.dto";
-import { HouseInfo} from "./adminhouseinfo.dto";
+import { OwnerForm } from "src/houseowner/ownerform.dto";
+import { AdminProfile} from "./adminform.dto";
+import { HouseInfo} from "./adminform.dto";
+import { ManagerForm} from "src/manager/managerform.dto";
+import * as bcrypt from 'bcrypt';
+import { MailerService } from "@nestjs-modules/mailer/dist";
 
 
 
@@ -17,131 +20,145 @@ export class AdminService {
     constructor(
         @InjectRepository(AdminEntity)
         private adminRepo: Repository<AdminEntity>,
-        @InjectRepository(CustomerEntity)
-        private customerRepo: Repository<CustomerEntity>,
-        @InjectRepository(EmployeeEntity)
-        private empRepo: Repository<EmployeeEntity>,
+        private mailerService: MailerService,
+        @InjectRepository(OwnerEntity)
+        private ownRepo: Repository<OwnerEntity>,
+        @InjectRepository(TenantEntity)
+        private tenantRepo: Repository<TenantEntity>,
         @InjectRepository(HouseEntity)
-        private houseRepo: Repository<HouseEntity>
+        private houseRepo: Repository<HouseEntity>,
+        @InjectRepository(ManagerEntity)
+        private managerRepo: Repository<ManagerEntity>
       ) 
       {}
 
-login(uname):any {
+//Search Tenant
+
+getTenantByID(id):any {
     
-    return this.adminRepo.findOneBy({uname});
-}
-    
-loginName(qry):any {
-        
-    return this.adminRepo.findOneBy({ uname:qry.uname,pass:qry.pass });
-}
-getCustomerByID(custid):any {
-    
-    return this.customerRepo.findOneBy({custid});
+    return this.tenantRepo.findOneBy({id});
 }
 
-getCustomerByIDName(qry):any {
+getTenantByIDName(qry):any {
 
-    return this.customerRepo.findOneBy({ custid:qry.custid,custname:qry.custname });
+    return this.tenantRepo.findOneBy({ id:qry.id,name:qry.name });
     
 }
 
-getEmployeeByID(id):any {
+//Search House Owner
+
+getHouseOwnerByID(ownid):any {
     
-    return this.empRepo.findOneBy({id});
+    return this.ownRepo.findOneBy({ownid});
 }
 
+getHouseOwnerByIDName(qry):any {
 
-
-
-getEmployeeByIDName(qry):any {
+    return this.ownRepo.findOneBy({ ownid:qry.ownid,ownname:qry.ownname });
     
-    return this.empRepo.findOneBy({ id:qry.id,name:qry.name });
+}
+
+//Search Manager
+
+getManagerByID(id):any {
+    
+    return this.managerRepo.findOneBy({id});
+}
+
+getManagerByIDName(qry):any {
+    
+    return this.managerRepo.findOneBy({ id:qry.id,name:qry.name });
 }
 
 
-insertEmployee(mydto:AdminForm):any{
+// Signup
 
-    const empaccount = new EmployeeEntity()
-    empaccount.name = mydto.name;
-    empaccount.email = mydto.email; 
-    empaccount.address = mydto.address;
-   return this.empRepo.save(empaccount);
+async signup(mydto){
+    const salt = await bcrypt.genSalt();
+    const hassedpassed = await bcrypt.hash(mydto.pass, salt);
+    mydto.pass= hassedpassed;
+    return this.adminRepo.save(mydto);
+    }
+//Signin
+
+async signin(mydto){
+    console.log(mydto.pass);
+const mydata= await this.adminRepo.findOneBy({email: mydto.email});
+const isMatch= await bcrypt.compare(mydto.pass, mydata.pass);
+if(isMatch) {
+return 1;
+}
+else {
+    return 0;
 }
 
+}
+//Update Admin
 
-
-insertCustomer(mydto:AdminCustomer):any{
-
-    const cusaccount = new CustomerEntity()
-    cusaccount.custname = mydto.custname;
-    cusaccount.email = mydto.email;
-    cusaccount.address = mydto.address;
-   return this.customerRepo.save(cusaccount);
+updateAdmin(uname,id):any {
+    console.log(uname+id);
+    return this.adminRepo.update(id,{uname:uname});
     }
 
+updateAdminbyid(mydto:AdminProfile,id):any {
+    return this.adminRepo.update(id,mydto);
+    }
 
-signup(mydto:AdminProfile):any{
+// Update Manager
 
-    const adminaccount = new AdminEntity()
-    adminaccount.uname = mydto.uname;
-    adminaccount.pass = mydto.pass;
-    adminaccount.email = mydto.email;
-    adminaccount.address = mydto.address;
-   return this.adminRepo.save(adminaccount);
-        
-}
-
-
-
-
-updateEmployee(name,id):any {
+updateManager(name,id):any {
     console.log(name+id);
-    return this.empRepo.update(id,{name:name});
+    return this.managerRepo.update(id,{name:name});
     }
 
-
-
-updateEmployeebyid(mydto:AdminForm,id):any {
-    return this.empRepo.update(id,mydto);
+updateManagerbyid(mydto:ManagerForm,id):any {
+    return this.managerRepo.update(id,mydto);
     }
     
+// Update House Owner
 
-updateCustomer(custname,custid):any {
-    console.log(custname+custid);
-    return this.customerRepo.update(custid,{custname:custname});
+updateHouseOwner(ownname,ownid):any {
+    console.log(ownname+ownid);
+    return this.ownRepo.update(ownid,{ownname:ownname});
     }
 
-
-
-updateCustomerbyid(mydto:AdminCustomer,custid):any {
-    return this.customerRepo.update(custid,mydto);
+updateHouseOwnerbyid(mydto:OwnerForm,ownid):any {
+    return this.ownRepo.update(ownid,mydto);
     }
 
+//Delete Manager
 
-
-
-    deleteEmployeebyid(id):any {
+    deleteManagerbyid(id):any {
     
-        return this.empRepo.delete(id);
+        return this.managerRepo.delete(id);
     }
 
+//Delete House Owner
 
-
-    deleteCustomerbyid(custid):any {
+    deleteHouseOwnerbyid(ownid):any {
     
-        return this.customerRepo.delete(custid);
+        return this.ownRepo.delete(ownid);
     }
+//Delete Admin
 
+  deleteAdminbyid(id):any {
+    
+    return this.adminRepo.delete(id);
+}
+//Forget password
     updatePassword(pass,id):any {
         console.log(pass+id);
         return this.adminRepo.update(id,{pass:pass});
     }
 
-    updatePasswordByID(mydto:AdminProfile,id):any {
+    async updatePasswordByID(mydto:AdminProfile,id){
+        const salt = await bcrypt.genSalt();
+        const hassedpassed = await bcrypt.hash(mydto.pass, salt);
+         mydto.pass= hassedpassed;
         return this.adminRepo.update(id,mydto);
     }
-    
+
+//Insert house
     insertHouse(mydto:HouseInfo):any{
 
         const houseaccount = new HouseEntity()
@@ -151,7 +168,8 @@ updateCustomerbyid(mydto:AdminCustomer,custid):any {
         houseaccount.RentPrice= mydto.RentPrice;
        return this.houseRepo.save(houseaccount);
     }
-
+  
+//Update House
     updateHouse(housename,id):any {
         console.log(housename+id);
         return this.houseRepo.update(id,{housename:housename});
@@ -160,17 +178,41 @@ updateCustomerbyid(mydto:AdminCustomer,custid):any {
     updateHouseByID(mydto:HouseInfo,id):any {
         return this.houseRepo.update(id,mydto);
     }
-    getCarByID(id):any {
-    
-        return this.houseRepo.findOneBy({id});
-    }
+
+//View Profile
     getProfile():string { 
         return "This is Admin Profile";
     
     }
 
+//Search house
+    getHouseByID(id):any {
+    
+        return this.houseRepo.findOneBy({id});
+    }
     getHouseByIDName(qry):any {
     
         return this.houseRepo.findOneBy({ id:qry.id,housename:qry.housename });
     }
+
+//View All managers
+    getManagersByAdminID(id):any {
+        return this.adminRepo.find({ 
+                where: {id:id},
+            relations: {
+                managers: true,
+            },
+         });
+    }
+
+//Send Email
+    async sendEmail(mydata){
+        return   await this.mailerService.sendMail({
+               to: mydata.email,
+               subject: mydata.subject,
+               text: mydata.text, 
+             });
+       
+       }
+       
 }

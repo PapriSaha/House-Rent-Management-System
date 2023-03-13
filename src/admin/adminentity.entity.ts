@@ -1,4 +1,6 @@
-import { Entity, Column, PrimaryGeneratedColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, OneToMany } from 'typeorm';
+import { ManagerEntity } from 'src/manager/managerentity.entity';
+import{OwnerEntity} from 'src/houseowner/ownerentity.entity';
 
 @Entity("admin")
 export class AdminEntity{
@@ -17,27 +19,23 @@ export class AdminEntity{
   @Column()
   address: string;
 
+  @Column()
+  dob:Date;
+
+  @Column()
+  filename:string;
+
+
+  @OneToMany(() => ManagerEntity ,(manager) => manager.admin)
+  managers: ManagerEntity[]
+  
 
 
 }
-@Entity("customer")
-   export class CustomerEntity{
 
-  @PrimaryGeneratedColumn()
-  custid: number;
 
-  @Column()
-  custname: string;
-
-  @Column()
-  email: string;
-
-  @Column()
-  address: string;
-
-   }
-   @Entity("employee")
-   export class EmployeeEntity{
+@Entity("tenant")
+   export class TenantEntity{
 
   @PrimaryGeneratedColumn()
   id: number;
@@ -53,7 +51,8 @@ export class AdminEntity{
 
    }
 
-   @Entity("houseInfo")
+
+   @Entity("houseinfo")
    export class HouseEntity{
 
   @PrimaryGeneratedColumn()
@@ -72,3 +71,5 @@ export class AdminEntity{
   RentPrice: number;
 
    }
+
+   
