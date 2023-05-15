@@ -1,14 +1,17 @@
-import { Injectable } from "@nestjs/common";
+import { HttpException, HttpStatus, Injectable ,NotFoundException} from "@nestjs/common";
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ManagerEntity } from "src/manager/managerentity.entity";
 import { AdminEntity } from "./adminentity.entity";
+import { PaymentEntity } from "./adminentity.entity";
 import { OwnerEntity } from "src/houseowner/ownerentity.entity";
 import { TenantEntity } from "./adminentity.entity";
 import { HouseEntity } from "./adminentity.entity";
 import { OwnerForm } from "src/houseowner/ownerform.dto";
 import { AdminProfile} from "./adminform.dto";
+import { AdminTenant} from "./adminform.dto";
 import { HouseInfo} from "./adminform.dto";
+import { PaymentInfo} from "./adminform.dto";
 import { ManagerForm} from "src/manager/managerform.dto";
 import * as bcrypt from 'bcrypt';
 import { MailerService } from "@nestjs-modules/mailer/dist";
@@ -28,11 +31,39 @@ export class AdminService {
         @InjectRepository(HouseEntity)
         private houseRepo: Repository<HouseEntity>,
         @InjectRepository(ManagerEntity)
-        private managerRepo: Repository<ManagerEntity>
+        private managerRepo: Repository<ManagerEntity>,
+        @InjectRepository(PaymentEntity)
+        private paymentRepo: Repository<PaymentEntity>
       ) 
       {}
 
-//Search Tenant
+//Tenant Index
+      getIndex():any { 
+        return this.tenantRepo.find();
+    
+    }
+
+//Admin Index
+getAdminIndex():any { 
+    return this.adminRepo.find();
+
+}
+
+
+
+//Search Admin by ID
+
+getAdminByID(id):any {
+    
+    return this.adminRepo.findOneBy({id});
+}
+
+getAdminByIDName(qry):any {
+
+    return this.adminRepo.findOneBy({ id:qry.id,uname:qry.uname });
+    
+}
+//Search Tenant by ID
 
 getTenantByID(id):any {
     
@@ -44,6 +75,53 @@ getTenantByIDName(qry):any {
     return this.tenantRepo.findOneBy({ id:qry.id,name:qry.name });
     
 }
+
+//Search Payment by Reference NO
+
+getPaymentByref(refno):any {
+    
+    return this.paymentRepo.findOneBy({refno});
+}
+
+getPaymentByrefno(qry):any {
+
+    return this.paymentRepo.findOneBy({ refno:qry.refno,id:qry.id});
+    
+}
+
+//Search Tenant by Name
+getTenantByName(uname):any {
+    
+    return this.tenantRepo.findOneBy({uname});
+}
+getTenantByUnameName(qry):any {
+
+    return this.tenantRepo.findOneBy({ uname:qry.uname,name:qry.name });
+    
+}
+
+//Insert Payment
+insertPayment(mydto:PaymentInfo):any {
+    
+    return this.paymentRepo.save(mydto);
+ 
+       }
+
+//Insert Admin
+
+async insertAdmin(mydto) {
+    const salt = await bcrypt.genSalt();
+    const hassedpassed = await bcrypt.hash(mydto.pass, salt);
+    mydto.pass= hassedpassed;
+     return this.adminRepo.save(mydto);
+    }
+
+//Insert Tenant
+
+async insertTenant(mydto:AdminTenant){
+    
+    return this.tenantRepo.save(mydto);
+    }
 
 //Search House Owner
 
@@ -81,19 +159,65 @@ async signup(mydto){
     }
 //Signin
 
-async signin(mydto){
-    console.log(mydto.pass);
-const mydata= await this.adminRepo.findOneBy({email: mydto.email});
-const isMatch= await bcrypt.compare(mydto.pass, mydata.pass);
-if(isMatch) {
-return 1;
-}
-else {
-    return 0;
-}
 
-}
+  async signin(mydto: AdminProfile): Promise<number> {
+    console.log(mydto.pass);
+    const mydata = await this.adminRepo.findOneBy({ email: mydto.email });
+    if (!mydata) {
+      // Handle the case when user data is not found
+      return 0;
+    }
+  
+    if (!mydto.pass || !mydata.pass) {
+      // Handle the case when password data is missing
+      return 0;
+    }
+  
+    const isMatch = await bcrypt.compare(mydto.pass, mydata.pass);
+  
+    if (isMatch) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+  
+ /*
+  async signin(mydto) {
+     const mydata = await this.adminRepo.findOneBy({ email: mydto.email });
+     if (!mydata) {
+       return 0;
+     }
+     if(mydto.pass== mydata.pass) 
+     {
+       return true;
+     }
+     return false;
+   }
+*/
+
 //Update Admin
+/*
+async updateAdmin(mydto: AdminProfile, email: string): Promise<string> {
+    console.log(mydto.email);
+    try {
+      const result = await this.adminRepo.update({ email: email }, mydto);
+      if (result.affected === 0) {
+        // No rows were affected by the update
+        return 'Admin not found';
+      } else {
+        // Update was successful
+        return 'Admin updated';
+      }
+    } catch (err) {
+      // An error occurred during the update operation
+      console.error(err);
+      return 'Update failed';
+    }
+  }
+  
+
+*/
 
 updateAdmin(uname,id):any {
     console.log(uname+id);
@@ -103,6 +227,7 @@ updateAdmin(uname,id):any {
 updateAdminbyid(mydto:AdminProfile,id):any {
     return this.adminRepo.update(id,mydto);
     }
+    
 
 // Update Manager
 
@@ -126,6 +251,12 @@ updateHouseOwnerbyid(mydto:OwnerForm,ownid):any {
     return this.ownRepo.update(ownid,mydto);
     }
 
+//Delete Tenant
+
+deleteTenantbyid(id):any {
+    
+    return this.tenantRepo.delete(id);
+}
 //Delete Manager
 
     deleteManagerbyid(id):any {
@@ -162,7 +293,7 @@ updateHouseOwnerbyid(mydto:OwnerForm,ownid):any {
     insertHouse(mydto:HouseInfo):any{
 
         const houseaccount = new HouseEntity()
-        houseaccount.housename = mydto.housename;
+        //houseaccount.housename = mydto.housename;
         houseaccount.HouseAdd = mydto.HouseAdd;
         houseaccount.RentStatus = mydto.RentStatus;
         houseaccount.RentPrice= mydto.RentPrice;
@@ -185,14 +316,14 @@ updateHouseOwnerbyid(mydto:OwnerForm,ownid):any {
     
     }
 
-//Search house
-    getHouseByID(id):any {
+//Search house by area
+    getHouseByArea(housename):any {
     
-        return this.houseRepo.findOneBy({id});
+        return this.houseRepo.findOneBy({housename});
     }
-    getHouseByIDName(qry):any {
+    getHouseByAreaName(qry):any {
     
-        return this.houseRepo.findOneBy({ id:qry.id,housename:qry.housename });
+        return this.houseRepo.findOneBy({ housename:qry.housename,id:qry.id});
     }
 
 //View All managers
@@ -214,5 +345,4 @@ updateHouseOwnerbyid(mydto:OwnerForm,ownid):any {
              });
        
        }
-       
-}
+    }

@@ -3,6 +3,7 @@ import { TypeOrmModule } from "@nestjs/typeorm";
 import { AdminController } from "./admin.controller"
 import { AdminService } from "./adminservice.service"
 import { AdminEntity } from "./adminentity.entity"
+import { PaymentEntity } from "./adminentity.entity"
 import { OwnerEntity } from "src/houseowner/ownerentity.entity"
 import { OwnerService } from "src/houseowner/owner.service";
 import { TenantEntity } from "./adminentity.entity"
@@ -27,7 +28,7 @@ imports: [
                },
               }
   }),
-    TypeOrmModule.forFeature([AdminEntity,OwnerEntity,TenantEntity,ManagerEntity,HouseEntity])],
+    TypeOrmModule.forFeature([AdminEntity,OwnerEntity,TenantEntity,ManagerEntity,HouseEntity,PaymentEntity])],
 controllers: [AdminController],
 providers: [AdminService,ManagerService,OwnerService],
 

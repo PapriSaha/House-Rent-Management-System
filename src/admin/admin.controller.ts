@@ -1,17 +1,20 @@
-import { Body, Controller, Delete, Get, Param, Post,Put,Patch, Query,Session,UseGuards,ParseFilePipe,ParseIntPipe,ParseFloatPipe,UsePipes,ValidationPipe,UseInterceptors,UploadedFile,MaxFileSizeValidator,FileTypeValidator} from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Post,Put,Patch,Res,Query,Session,UseGuards,ParseFilePipe,ParseIntPipe,ParseFloatPipe,UsePipes,ValidationPipe,UseInterceptors,UploadedFile,MaxFileSizeValidator,FileTypeValidator} from "@nestjs/common";
 import { ManagerForm } from 'src/manager/managerform.dto';
 import { ManagerService } from 'src/manager/manager.service';
 import { OwnerForm } from "src/houseowner/ownerform.dto";
 import{OwnerService}from "src/houseowner/owner.service";
-//import { AdminTenant} from "./adminform.dto";
 import { AdminProfile} from "./adminform.dto";
+import { PaymentInfo} from "./adminform.dto";
+import { AdminTenant} from "./adminform.dto";
 import { HouseInfo} from "./adminform.dto";
 import { AdminService } from "./adminservice.service";
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { UnauthorizedException } from '@nestjs/common/exceptions';
 import { SessionGuard } from './session.guard';
-
+import { AdminEntity } from "./adminentity.entity";
+import { Repository } from 'typeorm';
+import { InjectRepository } from '@nestjs/typeorm';
 
 
 
@@ -24,15 +27,52 @@ export class AdminController
     private ownerService:OwnerService
     ){}  
 
-//Search Tenants
+//Tenant Index
+    @Get('/tenantindex')
+    getTenant(): any {
+      return this.adminService.getIndex();
+    }
+    //Manager Index
+    @Get('/tenantindex')
+    getManager(): any {
+      return this.managerService.getManagerIndex();
+    }
+//Admin Index
+@Get('/adminindex')
+getAllAdmin(): any {
+  return this.adminService.getAdminIndex();
+}
+ 
+//Search Admins by ID
+@Get("/findadmin/:id")
+getAdminByID(@Param("id",ParseFloatPipe) id:number): any{
+  return this.adminService.getAdminByID(id);
+}
+
+@Get("/findadmin")
+getAdminByIDName(@Query() qry:any): any {
+  return this.adminService.getAdminByIDName(qry);
+}
+//Search Tenants by ID
   @Get("/findtenant/:id")
     getTenantByID(@Param("id",ParseFloatPipe) id:number): any{
       return this.adminService.getTenantByID(id);
     }
+  
     @Get("/findtenant")
     getTenantByIDName(@Query() qry:any): any {
       return this.adminService.getTenantByIDName(qry);
-    } 
+    }
+    
+// Search Tenants by User Name
+  @Get("/findtenantbyuname/:uname")
+  getTenantByName(@Param("uname") uname:string): any{
+    return this.adminService.getTenantByName(uname);
+  }
+  @Get("/findtenantbyuname")
+    getTenantByUnameName(@Query() qry:any): any {
+      return this.adminService.getTenantByUnameName(qry);
+    }
   
 //Search House Owner
     @Get("/findowner/:ownid")
@@ -53,6 +93,17 @@ export class AdminController
     getManagerByIDName(@Query() qry:any): any {
       return this.adminService.getManagerByIDName(qry);
     } 
+
+  //Search Payment by reference no
+
+@Get("/findpayment/:refno")
+getPaymentByref(@Param("refno",ParseIntPipe) refno:number): any{
+  return this.adminService.getPaymentByref(refno);
+}
+@Get("/findpayment")
+getPaymentByrefno(@Query() qry:any): any {
+  return this.adminService.getPaymentByrefno(qry);
+} 
 // View All managers
 
 
@@ -65,11 +116,44 @@ export class AdminController
     getAdminByManagerID(@Param('id', ParseIntPipe) id: number): any {
       return this.managerService.getAdminByManagerID(id);
     }
-    
+ 
+// Insert Tenant
+@Post("/inserttenant")
+//@UsePipes(new ValidationPipe())
+@UseInterceptors(FileInterceptor('filename',
+{storage:diskStorage({
+  destination: './uploads',
+  filename: function (req,file, cb) {
+    cb(null,Date.now()+file.originalname)
+  }
+})
+}))
+  insertTenant(@Body() mydto:AdminTenant,@UploadedFile(new ParseFilePipe({
+    validators: [
+      new MaxFileSizeValidator({ maxSize: 160000}),
+      new FileTypeValidator({ fileType: 'png|jpg|jpeg|' }),
+    ],
+  }),) file: Express.Multer.File):any{
+    mydto.filename = file.filename; 
+    return this.adminService.insertTenant(mydto);
+  }
 
+  
+
+  @Get('/getimage/:name')
+    getImages(@Param('name') name, @Res() res) {
+      res.sendFile(name,{ root: './uploads' })
+    }
+  
+    // Insert Payment
+  @Post("/insertpayment")
+  @UsePipes(new ValidationPipe())
+    insertPayment(@Body() mydto:PaymentInfo):any{
+      return this.adminService.insertPayment(mydto);
+    }
 // Insert Manager
   @Post("/insertmanager")
-  @UsePipes(new ValidationPipe())
+  //@UsePipes(new ValidationPipe())
     insertManager(@Body() mydto:ManagerForm):any{
       return this.managerService.insertManager(mydto);
     }
@@ -99,30 +183,52 @@ signup(@Body() mydto:AdminProfile,@UploadedFile(new ParseFilePipe({
 }),) file: Express.Multer.File):any{
 
 mydto.filename = file.filename;  
-
 return this.adminService.signup(mydto);
 
 }
 
 //Sign in
 
-@Get('/signin')
-signin(@Session() session, @Body() mydto:AdminProfile)
-{
-if(this.adminService.signin(mydto))
-{
-  session.email = mydto.email;
 
+  @Post('/signin')
+
+  signin(@Session() session, @Body() mydto:AdminProfile){
+  
+  if(this.adminService.signin(mydto))
+  {
+    session.email = mydto.email;
+  
   console.log(session.email);
+  
   return {message:"success"};
-
-}
-else
-{
+  }
+  else
+  {
   return {message:"invalid credentials"};
-}
- 
-}
+  }
+  }
+  /*
+  @Post('/signin')
+  async signin(@Session() session, @Body() mydto:AdminProfile)
+    {
+     console.log("enter")
+  
+      const res = await (this.adminService.signin(mydto));
+  if(res==true)
+  {
+    // console.log("pass milse")
+    session.email = mydto.email;
+    return (session.email);
+  }
+  else
+  {
+    throw new UnauthorizedException({ message: "invalid" });
+  }
+  }
+  
+*/
+
+
 
 //Signout
 
@@ -141,6 +247,7 @@ signout(@Session() session)
 
 
 // Forget Password 
+
     @Patch("/forgetpassword/")
     @UsePipes(new ValidationPipe())
       updatePassword( 
@@ -157,27 +264,67 @@ signout(@Session() session)
       return this.adminService.updatePasswordByID(mydto,id);
       }
 
+//Insert Admin
+@Post("/insertadmin")
+@UsePipes(new ValidationPipe())
+  insertAdmin(@Body() mydto:AdminProfile):any{
+    return this.adminService.insertAdmin(mydto);
+  }
 //Update Admin
+/*
+@Put('/updateadmin')
+@UseInterceptors(
+  FileInterceptor('filename', {
+    storage: diskStorage({
+      destination: './uploads',
+      filename: function (req, file, cb) {
+        cb(null, Date.now() + file.originalname);
+      }
+    })
+  })
+)
+async updateAdmin(
+  @Body() mydto: AdminProfile,
+  @UploadedFile() file: Express.Multer.File
+): Promise<string> {
+  try {
+    console.log(mydto.email);
+    mydto.filename = file.filename;
+    const result = await this.adminRepo.update({ email: mydto.email }, mydto);
+    if (result.affected === 0) {
+      // No rows were affected by the update
+      return 'Admin not found';
+    } else {
+      // Update was successful
+      return 'Admin updated';
+    }
+  } catch (err) {
+    // An error occurred during the update operation
+    console.error(err);
+    return 'Update failed';
+  }
+}
 
+*/
 @Put('/updateadmin/')
-  @UseGuards(SessionGuard)
-  @UsePipes(new ValidationPipe())
+  //@UseGuards(SessionGuard)
+  //@UsePipes(new ValidationPipe())
   updateAdmin(@Session() session,@Body('uname') uname: string): any {
     console.log(session.email);
     return this.adminService.updateAdmin(uname, session.email);
   }
 
   @Put('/updateadmin/:id')
-  @UsePipes(new ValidationPipe())
+  //@UsePipes(new ValidationPipe())
   updateAdminbyid(
     @Body() mydto: AdminProfile,
     @Param('id', ParseIntPipe) id: number,
   ): any {
     return this.adminService.updateAdminbyid(mydto, id);
   }
-
+  
 // Update Manager
-  @Put("/updatemanager/")
+  @Patch("/updatemanager/")
   @UsePipes(new ValidationPipe())
     updateManager( 
       @Body("name") name:string, 
@@ -185,7 +332,7 @@ signout(@Session() session)
       ): any {
     return this.adminService.updateManager(name, id);
     } 
-    @Put("/updatemanager/:id")
+    @Patch("/updatemanager/:id")
   updateManagerbyid( 
       @Body() mydto:ManagerForm,
       @Param("id",ParseIntPipe) id:number
@@ -220,6 +367,16 @@ signout(@Session() session)
     return this.adminService.deleteAdminbyid(id);
     }
 
+
+//Delete Tenant
+
+@Delete("/deletetenant/:id")
+  deleteTenantbyid( 
+     @Param("id",ParseIntPipe) id:number
+      ): any {
+    return this.adminService.deleteTenantbyid(id);
+    }
+
 //Update House Owner
 
   @Put("/updateowner/")
@@ -248,8 +405,8 @@ signout(@Session() session)
 
 //Insert house
   @Post("/inserthouse")
-  @UsePipes(new ValidationPipe())
-    insertCar(@Body() mydto:HouseInfo): any {
+  //@UsePipes(new ValidationPipe())
+    insertHouse(@Body() mydto:HouseInfo): any {
       return this.adminService.insertHouse(mydto);
     }
 
@@ -270,15 +427,15 @@ signout(@Session() session)
       return this.adminService.updateHouseByID(mydto,id);
       }
 
-//Search house
-  @Get("/findhouse/:id")
-      getCarByID(@Param("id",ParseIntPipe) id:number): any{
-        return this.adminService.getHouseByID(id);
+//Search house by area
+  @Get("/findhouse/:housename")
+      getHouseByArea(@Param("housename") housename:string): any{
+        return this.adminService.getHouseByArea(housename);
       }
 
     @Get("/findhouse")
-    getHouseByIDName(@Query() qry:any): any {
-      return this.adminService.getHouseByIDName(qry);
+    getHouseByAreaName(@Query() qry:any): any {
+      return this.adminService.getHouseByAreaName(qry);
     }  
 
 //Send Email

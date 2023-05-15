@@ -16,8 +16,6 @@ import { Entity, Column, PrimaryGeneratedColumn , ManyToOne} from 'typeorm';
   @Column()
   address: string;
 
-  @Column()
-  filename:string;
 
   @ManyToOne(() => AdminEntity, (admin) => admin.managers)
     admin: AdminEntity

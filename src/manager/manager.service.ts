@@ -19,6 +19,12 @@ insertManager(mydto:ManagerForm):any {
 
       }
 
+      //Manager Index
+getManagerIndex():any { 
+    return this.managerRepo.find();
+
+}
+
 getAdminByManagerID(id):any {
         return this.managerRepo.find({ 
                 where: {id:id},

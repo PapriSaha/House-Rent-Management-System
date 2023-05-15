@@ -12,7 +12,5 @@ export class ManagerForm {
     @IsNotEmpty()
     address:string;
 
-    filename:string;
-
     adminid:number;
   }

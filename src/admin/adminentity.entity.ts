@@ -41,6 +41,9 @@ export class AdminEntity{
   id: number;
 
   @Column()
+  uname:string;
+
+  @Column()
   name: string;
 
   @Column()
@@ -48,6 +51,12 @@ export class AdminEntity{
 
   @Column()
   address: string;
+
+  @Column()
+  dob:Date;
+
+  @Column()
+  filename:string;
 
    }
 
@@ -69,6 +78,31 @@ export class AdminEntity{
 
   @Column()
   RentPrice: number;
+
+   }
+
+   @Entity("paymentinfo")
+   export class PaymentEntity{
+
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column()
+  refno:number;
+
+  @Column()
+  payid:number;
+
+
+  @Column()
+  amount:number;
+
+  @Column()
+  paydate:Date;
+
+  @Column()
+  paymonth:string;
+
 
    }
 
